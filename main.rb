@@ -41,7 +41,11 @@ end
 
 
 source_streaming_client.user do |object|
-  if object.is_a?(Twitter::Tweet) && object.user.id == source_user_id
+  if object.is_a?(Twitter::Tweet) &&
+      object.user.id == source_user_id &&
+      !object.reply?  &&
+      !object.retweet?  &&
+      !object.quote?
     japanese_text = object.text
     english_text = translate_from_japanese_to_english japanese_text
     lojban_text = translate_from_english_to_lojban english_text
