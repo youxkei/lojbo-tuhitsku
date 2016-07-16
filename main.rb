@@ -1,8 +1,8 @@
 require "open-uri"
+require "cgi"
 
 require "dotenv"
 require "twitter"
-require "bing_translator"
 
 Dotenv.load
 
@@ -29,14 +29,18 @@ end
 
 source_user_id = source_rest_client.user.id
 
-$translator = BingTranslator.new ENV["MICROSOFT_TRANSLATOR_API_CLIENT_ID"], ENV["MICROSOFT_TRANSLATOR_API_CLIENT_SECRET"]
-
 def translate_from_japanese_to_english(japanese_text)
-  return $translator.translate japanese_text, from: 'ja', to: 'en'
+  return CGI.unescapeHTML(Net::HTTP.post_form(URI.parse("http://www.excite.co.jp/world/english/"), {
+    auto_detect_flg: 1,
+    wb_lp: "JAEN",
+    before_lang: "JA",
+    after_lang: "EN",
+    before: japanese_text,
+  }).body.match(/<textarea.*?id="after".*?>(.*?)<\/textarea>/)[1])
 end
 
 def translate_from_english_to_lojban(english_text)
-  return open("http://lojban.lilyx.net/zmifanva/?src=#{english_text.gsub " ", "+"}&dir=en2jb").string.match(/Target Text \(Output\):.*?<textarea.*?>(.*?)<\/textarea/m)[1].strip
+  return open("http://lojban.lilyx.net/zmifanva/?src=#{URI.encode(english_text.gsub " ", "+")}&dir=en2jb").string.match(/Target Text \(Output\):.*?<textarea.*?>(.*?)<\/textarea/m)[1].strip
 end
 
 
@@ -50,6 +54,6 @@ source_streaming_client.user do |object|
     english_text = translate_from_japanese_to_english japanese_text
     lojban_text = translate_from_english_to_lojban english_text
 
-    target_rest_client.update lojban_text[0, 140]
+    target_rest_client.update lojban_text[0, 140] if lojban_text.length > 0
   end
 end
