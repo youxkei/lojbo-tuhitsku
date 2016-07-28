@@ -44,16 +44,20 @@ def translate_from_english_to_lojban(english_text)
 end
 
 
-source_streaming_client.user do |object|
-  if object.is_a?(Twitter::Tweet) &&
-      object.user.id == source_user_id &&
-      !object.reply?  &&
-      !object.retweet?  &&
-      !object.quote?
-    japanese_text = object.text
-    english_text = translate_from_japanese_to_english japanese_text
-    lojban_text = translate_from_english_to_lojban english_text
+begin
+  source_streaming_client.user do |object|
+    if object.is_a?(Twitter::Tweet) &&
+        object.user.id == source_user_id &&
+        !object.reply?  &&
+        !object.retweet?  &&
+        !object.quote?
+      japanese_text = object.text
+      english_text = translate_from_japanese_to_english japanese_text
+      lojban_text = translate_from_english_to_lojban english_text
 
-    target_rest_client.update lojban_text[0, 140] if lojban_text.length > 0
+      target_rest_client.update lojban_text[0, 140] if lojban_text.length > 0
+    end
   end
+rescue
+  retry
 end
